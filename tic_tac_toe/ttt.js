@@ -60,7 +60,7 @@ function startGame(){
     var numPlayers; //number of players
     var winNumber; //number of consecutive symbols for win
     var players; //an array of player names
-    var playerNames; //a map of (player name : symbol)
+    var nameToSymbol; //a map of (player name : symbol)
     var totalMoves; // move count
     if(startAGame == 'yes'){
         //resume a saved game.
@@ -68,22 +68,27 @@ function startGame(){
             console.log('\x1b[36m%s\x1b[0m', file.split('.json')[0]);
         });
         var savedFile = pickAFile(filepath);
-        //load in data
-        dataToSave = readData(filepath, savedFile);
-        //load in parameters
-        numPlayers = dataToSave['numPlayers'];
-        size = dataToSave['boardSize'];
-        winNumber = dataToSave['winNumber'];
-        players = dataToSave['names'];
-        playerNames = dataToSave['playerToSymbol'];
-        totalMoves = dataToSave['moveCount'];
-        board = loadInBoard(dataToSave);
-        //console.log(typeof numPlayers);
-        //let player take turns to move symbols.
-        console.log('\x1b[36m%s\x1b[0m','All set! Game on!\n');
-        console.log('\x1b[36m%s\x1b[0m','Please take turn to put your symbol on the board.\n');
-        console.log('\x1b[36m%s\x1b[0m','To put your symbol onto a specific position, you just type the row and column number of the board, seperated by one whitespace.\n');
-        gameOnGoing(numPlayers, size, winNumber, players, playerNames, totalMoves);
+        if (savedFile != 'Q'){
+            //load in data
+            dataToSave = readData(filepath, savedFile);
+            console.log(dataToSave);
+            //load in parameters
+            numPlayers = dataToSave['numPlayers'];
+            size = dataToSave['boardSize'];
+            winNumber = dataToSave['winNumber'];
+            players = dataToSave['names'];
+            nameToSymbol = dataToSave['playerToSymbol'];
+            totalMoves = dataToSave['moveCount'];
+            board = loadInBoard(dataToSave);
+            //console.log(typeof numPlayers);
+            //let player take turns to move symbols.
+            console.log('\x1b[36m%s\x1b[0m','All set! Game on!\n');
+            console.log('\x1b[36m%s\x1b[0m','Please take turn to put your symbol on the board.\n');
+            console.log('\x1b[36m%s\x1b[0m','To put your symbol onto a specific position, you just type the row and column number of the board, seperated by one whitespace.\n');
+            gameOnGoing(numPlayers, size, winNumber, players, nameToSymbol, totalMoves, filepath);
+        }else{
+            console.log('\x1b[36m%s\x1b[0m', "GoodBye. You can restart a game anytime.\n");
+        }
         
         
     }else if (startAGame == 'no'){
@@ -93,16 +98,16 @@ function startGame(){
         console.log('\x1b[36m%s\x1b[0m', 'numer of palyers is ' + numPlayers);
         //ask players' names and assign symbols to players
         console.log('\x1b[36m%s\x1b[0m', "Please tell me your names.\n");
-        playerNames = {}; //a map of (name, symbol);
+        nameToSymbol = {}; //a map of (name, symbol);
         players = []; // names of players
         for(var i = 1; i <= numPlayers; i++){
             duplicateFlag = true;
             while(duplicateFlag){
                 console.log('\x1b[36m%s\x1b[0m', 'Name of player ' + i + ':');
                 let player = readlineSync.question('>> ');
-                if(players.indexOf(plyr) >= 0 || players.length == 0){
+                if(players.indexOf(player) < 0){
                     players.push(player);
-                    playerNames[player] = symbols[i-1];
+                    nameToSymbol[player] = symbols[i-1];
                     duplicateFlag = false;
                 }else{
                     console.log('\x1b[33m%s\x1b[0m', player + ' has been taken, pick another name.\n');
@@ -111,14 +116,15 @@ function startGame(){
         }
         //console.log(players);
         console.log('\x1b[36m%s\x1b[0m', 'Each player has been assigned a symbol. Please check out the following name-symbole pair list and remember your own symbol.\n');
-        console.log(playerNames);
+        console.log(nameToSymbol);
         console.log('\n\n\n');
         // ask how large the board should be as a prompt on its own line. The maximum number is 999.
-        size = Number(sizeOfBoard());
+        size = Number(sizeOfBoard(numPlayers));
         console.log('\x1b[36m%s\x1b[0m', 'size of board is ' + size);
         //initialize game board
         board = initGameBoard(size);
-        console.log(board);
+        //draw the board
+        drawBoard(board);
         // ask what the win sequence count should be (i.e. 3 would be normal standard tic-tac-toe) as a prompt on its own line.
         console.log('\x1b[36m%s\x1b[0m','Now let us set up the standard for a final win.\n');
         winNumber = Number(winSequenceCount(size));
@@ -130,7 +136,7 @@ function startGame(){
         //game on!!!
         //while no winner and no draw and no quit order, keep running the game function.
         totalMoves = 0;
-        gameOnGoing(numPlayers, size, winNumber, players, playerNames, totalMoves);
+        gameOnGoing(numPlayers, size, winNumber, players, nameToSymbol, totalMoves, filepath);
         
     }else if (startAGame == 'quit'){
         //quit
@@ -154,11 +160,15 @@ function startGame(){
 
 function pickAFile(filepath){
     //let filepath = './saved_games/';
-    console.log('\x1b[36m%s\x1b[0m','\npick a filename from the existing files listed above.');
+    console.log('\x1b[36m%s\x1b[0m','\npick a filename from the existing files listed above. type "Q" to quit.\n');
     let savedFile = readlineSync.question(">> ");
     if (fs.existsSync(filepath+savedFile + '.json')) {
         return savedFile;
-    }else{
+    }else if(savedFile == 'Q'){
+        return savedFile;
+    }
+    
+    else{
         console.log('\x1b[31m%s\x1b[0m', 'ERROR: ');
         console.log('\x1b[36m%s\x1b[0m', '      ' + savedFile + ' does not exist.\n\n');
         return pickAFile();
@@ -175,7 +185,8 @@ function readData(filepath, filename){
 //load saved moves into board;
 function loadInBoard(dataToSave){
     board = dataToSave['board'];
-    console.log(board);
+    //draw the board;
+    drawBoard(board);
     return board;
 }
 
@@ -193,8 +204,9 @@ function loadInBoard(dataToSave){
  * if calls @function askSave to request a filename to save game data.
  */
 
-function gameOnGoing(numPlayers, size, winNumber, players, playerNames, totalMoves){
-    console.log(board);
+function gameOnGoing(numPlayers, size, winNumber, players, nameToSymbol, totalMoves, filepath){
+    //draw the board
+    drawBoard(board);
     //initialize loop stop flags
     var winOut = false; //true when winner comes out;
     var quitFlag = false; // true when some quits
@@ -204,7 +216,7 @@ function gameOnGoing(numPlayers, size, winNumber, players, playerNames, totalMov
         let p = players[totalMoves % numPlayers]; //the player's name
         //console.log(totalMoves % numPlayers);
         //console.log('this is a p: ' + p);
-        let s = playerNames[p]; //the player's symbol
+        let s = nameToSymbol[p]; //the player's symbol
             
         let move = getMove(p, s);
             
@@ -213,7 +225,8 @@ function gameOnGoing(numPlayers, size, winNumber, players, playerNames, totalMov
             totalMoves += 1;
             
             fillInSpot(Number(move[0]),Number(move[1]), s);
-            console.log(board);
+            //draw the board;
+            drawBoard(board);
             //check out if winner comes out;
             if(totalMoves >= (winNumber - 1)*numPlayers + 1){
                 winOut = checkWinner(Number(move[0]), Number(move[1]) , s, winNumber, size); //size must be added as a parameter here, otherwise it cannot be found in the scope, I don't know why while it can find board anyway.
@@ -235,14 +248,15 @@ function gameOnGoing(numPlayers, size, winNumber, players, playerNames, totalMov
             while(!sureFlag){
                 let answ = readlineSync.question('>> ');
                 if(answ === 'y'){
-                    askSave(numPlayers, players, playerNames, size, totalMoves);
+                    //askSave(filepath, numPlayers, players, nameToSymbol, size, totalMoves);
+                    askSave(filepath, numPlayers, players, nameToSymbol, winNumber, size, totalMoves);
                     quitFlag = true;
                     sureFlag = true;
                 }else if(answ === 'n'){
                     sureFlag = true;
                     continue;
                 }else{
-                    console.log(''\x1b[33m%s\x1b[0m', "please type 'y' to quit, or 'n' to go back to the game.\n"');
+                    console.log('\x1b[33m%s\x1b[0m', "please type 'y' to quit, or 'n' to go back to the game.\n");
                 }
             }
             
@@ -305,8 +319,8 @@ function fillInSpot(row, col, symbol){
  * 
  */
 function checkWinner(row, col, symbol, winNumber, size){
-    var checkRow = checkRowCol(row, symbol, winNumber, size, flag = 'r'); // check horizontal line;
-    var checkCol = checkRowCol(col, symbol, winNumber, size, flag = 'c'); // check vertical line;
+    var checkRow = checkRowCol(row, col, symbol, winNumber, size, flag = 'r'); // check a row;
+    var checkCol = checkRowCol(row, col, symbol, winNumber, size, flag = 'c'); // check a column;
     var checkD = checkDiag(row, col, symbol, winNumber, size); // check diagonal line
     var checkRD = checkReverseDiag(row, col, symbol, winNumber, size); // check reverse diagonal line
     var checked = checkRow || checkCol || checkD || checkRD;
@@ -319,27 +333,31 @@ function checkWinner(row, col, symbol, winNumber, size){
 //check winner at row and column,
 //check row when flag = 'r';
 //check column when flag = 'c';
-function checkRowCol(idx, symbol, winNumber, size, flag = 'r'){
+function checkRowCol(row, col, symbol, winNumber, size, flag = 'r'){
     var count = 0;
     if(flag === 'r'){
-        var c = 1;
-        while(c <= size && count < winNumber){
-            if(board[idx][c] == symbol){
+        var c = Math.max(1, col - winNumber);
+        var steps = 0;
+        while(c <= size && count < winNumber && steps < 2*winNumber){
+            if(board[row][c] == symbol){
                 count += 1;
             }else{
                 count = 0;
             }
             c += 1;
+            steps += 1;
         }
     }else if(flag === 'c'){
-        var r = 1;
-        while(r <= size && count < winNumber){
-            if(board[r][idx] == symbol){
+        var r = Math.max(1, row - winNumber);
+        var steps = 0;
+        while(r <= size && count < winNumber && steps < 2*winNumber){
+            if(board[r][col] == symbol){
                 count += 1;
             }else{
                 count = 0;
             }
             r += 1;
+            steps += 1;
         }
     }
     
@@ -349,16 +367,21 @@ function checkRowCol(idx, symbol, winNumber, size, flag = 'r'){
     return false;
 }
 
+
 //console.log(checkRowCol(2, 'X', 3, flag = 'r'));
 function checkDiag(row, col, symbol, winNumber, size){
     var r = row;
     var c = col;
-    while (r > 1 && c > 1){
+    var steps = 0;
+    while (r > 1 && c > 1 && steps < winNumber){
         r -= 1;
         c -= 1;
+        steps +=1;
     }
+    //console.log("steps 1: " + steps);
     var count = 0;
-    while(r <= size && c <= size && count < winNumber){
+    steps = 0;
+    while(r <= size && c <= size && count < winNumber && steps <2*winNumber){
         if(board[r][c] == symbol){
             count += 1;
         }else{
@@ -366,7 +389,10 @@ function checkDiag(row, col, symbol, winNumber, size){
         }
         r += 1;
         c += 1;
+        steps += 1;
     }
+    //console.log("steps 2: " + steps);
+    
     if (count >= winNumber){
         return true;
     }
@@ -377,12 +403,15 @@ function checkReverseDiag(row, col, symbol, winNumber, size){
     //first I need to find a start point for search
     var r = row;
     var c = col;
-    while (r < size && c > 1){
+    var steps = 0;
+    while (r < size && c > 1 && steps < winNumber){
         r +=1;
         c -=1;
+        steps += 1;
     }
     var count = 0;
-    while(r > 0 && c <= size && count < winNumber){
+    steps = 0;
+    while(r > 0 && c <= size && count < winNumber && steps < 2*winNumber){
         if(board[r][c] == symbol){
             count += 1;
         }else{
@@ -390,6 +419,7 @@ function checkReverseDiag(row, col, symbol, winNumber, size){
         }
         r -= 1;
         c += 1;
+        steps += 1;
     }
     if (count >= winNumber){
         return true;
@@ -401,33 +431,33 @@ function checkReverseDiag(row, col, symbol, winNumber, size){
 //ask players if they want to save the unfinished game
 //if yes, ask filename;
 //calls saveData to save game data into a json file named as filename.
-function askSave(filepath, numPlayers, playerName, roster, winNumber, boardSize, totalMoves, moves){
+function askSave(filepath, numPlayers, playerName, nameToSymbol, winNumber, boardSize, totalMoves){
     console.log('\x1b[36m%s\x1b[0m', "Do you want to save this unfinished game[y/n]?\n");
     let saveGame = readlineSync.question('>> ');
     switch (saveGame){
         case 'y':
             console.log('\x1b[36m%s\x1b[0m', "The game will be saved in a json file, please assign a file name to the json file: \n");
             let fn = readlineSync.question('>> ');
-            saveData(filepath, fn, numPlayers, playerName, roster, winNumber, boardSize, totalMoves, moves);
+            saveData(filepath, fn, numPlayers, playerName, nameToSymbol, winNumber, boardSize, totalMoves);
             break;
         case 'n':
             console.log('\x1b[36m%s\x1b[0m',"OK. GoodBye!");
             break;
         default:
             console.log('\x1b[33m%s\x1b[0m', "please type 'y' to save or 'n' to leave.\n");
-            askSave(filepath, numPlayers, playerName, roster, winNumber, boardSize, totalMoves, moves);
+            askSave(filepath, numPlayers, playerName, nameToSymbol, winNumber, boardSize, totalMoves);
             break;
     }
 }
 
 //save all related parameters and existing moves into a json file under the folder 'saved_games'.
-function saveData(filepath, filename, numPlayers, playerName, roster, winNumber, boardSize, totalMoves){
+function saveData(filepath, filename, numPlayers, playerName, nameToSymbol, winNumber, boardSize, totalMoves){
     dataToSave = {};
     dataToSave['numPlayers'] = numPlayers;
     dataToSave['boardSize'] = boardSize; 
     dataToSave['names'] = playerName;
     dataToSave['winNumber'] = winNumber;
-    dataToSave['playerToSymbol'] = roster;
+    dataToSave['playerToSymbol'] = nameToSymbol;
     dataToSave['moveCount'] = totalMoves;
     dataToSave['board'] = board;
     let data = JSON.stringify(dataToSave);
@@ -460,15 +490,15 @@ function askNumberOfPlayers(){
     }
 }
 
-function sizeOfBoard(){
-    console.log('\x1b[36m%s\x1b[0m', 'For the size of the game board, please give me a number btw 3 and 999 (inclusive) \n');
+function sizeOfBoard(numPlayers){
+    console.log('\x1b[36m%s\x1b[0m', 'For the size of the game board, please give me a number less or equal to 999.\n');
     var bSize = readlineSync.question('>> ');
-    if(bSize >= 3 && bSize <= 999){
+    if(bSize > 0 && bSize <= 999 && bSize*bSize > (bSize - 1) * numPlayers && bSize*bSize > numPlayers){
         return bSize;
     }else{
         console.log('\x1b[31m%s\x1b[0m', 'ERROR: ');
-        console.log('\x1b[36m%s\x1b[0m', '      The input value is invalid. Please try again.\n');
-        return sizeOfBoard();
+        console.log('\x1b[36m%s\x1b[0m', '      The input value is invalid, or under the current board size, no player can win. Please try again.\n');
+        return sizeOfBoard(numPlayers);
     }
 }
 
@@ -490,13 +520,13 @@ function initGameBoard(size){
 function winSequenceCount(size){
     flag = true;
     while(flag){
-        console.log('\x1b[36m%s\x1b[0m', 'How many symbols are needed in a sequence to be treated as a final win? Pick a number btw 3 and the size of the board.\n');
+        console.log('\x1b[36m%s\x1b[0m', 'How many symbols are needed in a sequence to be treated as a final win? Pick a number less than or equal to the size of the board.\n');
         var winNumber = readlineSync.question('>> ');
-        if(winNumber >= 3 && winNumber <= size){
+        if(winNumber > 0 && winNumber <= size){
             flag = false;
             return winNumber;
         }
-        console.log('\x1b[33m%s\x1b[0m', 'Sorry, you must choose a number >= 3 and <= the board size that you just chose, which is ' + size + '.\n');
+        console.log('\x1b[33m%s\x1b[0m', 'Sorry, you must choose a number <= the board size that you just chose, which is ' + size + '.\n');
         
     }
 }
@@ -515,16 +545,47 @@ function winSequenceCount(size){
  * Drawing board functions
  * 
  */
+function drawBoard(board){
+    drawColIndex(board);
+    for(var r_i = 1; r_i < board.length - 1; r_i++){
+        drawBoardRow(board,r_i);
+        drawCushion(board);
+    }
+    drawBoardRow(board,board.length-1);
+}
+function drawColIndex(board){
+    var result = '';
+    for(var i = 0; i < board[0].length; i++){
+        if(i === 0){
+            result += '   ';
+        }else{
+            result += ' ' + i + '  ';
+        }
+    }
+    console.log(result);
+}
+
+function drawBoardRow(board, r_i){
+    var result = '';
+    for(var i = 0; i < board[r_i].length; i++){
+        if(i === 0){
+            result += board[r_i][i] + '  ';
+        }else{
+            result += ' ' + board[r_i][i] + ' |';
+        }
+    }
+    console.log(result.substr(0,result.length -1));
+}
 
 //draw cushion seperating lines of board;
-function drawcushion(row){
+function drawCushion(board){
     var cushion = '   ';
-    for(var i = 1; i < size; i++){
+    for(var i = 1; i < board.length; i++){
         cushion += '---+';
     }
-    cushion += '---';
-    return cushion;
+    console.log(cushion.substr(0,cushion.length - 1));
 }
+
 
 /*
 ///////////////////////////////////////
