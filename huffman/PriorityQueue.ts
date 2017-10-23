@@ -17,7 +17,7 @@ export class PriorityQueue<T> {
         }
         let added: boolean = false;
         for (let i: number = 0; i < this.arr.length; i++) {
-            if (this.prioritizer(value, this.arr[i]) < 0) {
+            if (this.prioritizer(value, this.arr[i]) <= 0) {
                 continue;
             }
             this.arr.splice(i, 0, value);

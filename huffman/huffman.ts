@@ -63,7 +63,7 @@ class HuffmanEncode {
 		//TODO: check the validity of filename, whether it exists.
 		
 		this.data = fs.readFileSync(filename, 'utf8');
-		this.data = this.data.replace(/[^\w]/g, '');
+		this.data = this.data.replace(/[^A-Za-z0-9]/g, '');
 		//console.log(this.data);
 	}
 	
@@ -157,8 +157,8 @@ class HuffmanEncode {
 	}
 
 	private output_frequency_table(node: TreeNode): string {
-		let freq_perc: number = Math.round(node.val / this.data.length * 100);
-		let space: string = this.repeat_padding_space(10 - freq_perc.toString().length + 1);
+		let freq_perc: any = ((node.val / this.data.length) * 100).toFixed(3).toString();
+		let space: string = this.repeat_padding_space(10 - freq_perc.length + 1);
 		let result: string = node.name + ','+ space + freq_perc + "%";
 		//console.log(result);
 		return result;
@@ -171,29 +171,29 @@ class HuffmanEncode {
 		return result;
 	}
 	//write into the output.dat
-	output() {
+	output(filename) {
 		let frequency_table_output: string[] = [];
 		let huffman_code_output: string[] = [];
 		let total_count: number = 0;
 		while(!this.frequency_queue.empty()) {
 			let node: TreeNode = this.frequency_queue.dequeue();
-			total_count = total_count + node.code.length;
+			total_count = total_count + node.code.length * node.val;
 			let frequency: string = this.output_frequency_table(node);
 			let huffman_code: string = this.output_huffman_code(node);
 			frequency_table_output.push(frequency);
 			huffman_code_output.push(huffman_code);
 		}
-		fs.writeFileSync('output.dat', 'Symbol' + this.repeat_padding_space(5) + "Frequency\n");
+		fs.writeFileSync(filename, 'Symbol' + this.repeat_padding_space(5) + "Frequency\n");
 		for(let freq of frequency_table_output) {
-			fs.appendFileSync('output.dat', freq + '\n');
+			fs.appendFileSync(filename, freq + '\n');
 			console.log(freq);
 		}
-		fs.appendFileSync('output.dat', '\n\nSymbol' + this.repeat_padding_space(5) + "Huffman Codes\n");
+		fs.appendFileSync(filename, '\n\nSymbol' + this.repeat_padding_space(5) + "Huffman Codes\n");
 		for (let code of huffman_code_output) {
-			fs.appendFileSync('output.dat', code + '\n');
+			fs.appendFileSync(filename, code + '\n');
 			console.log(code);
 		}
-		fs.appendFileSync('output.dat', '\nTotal Bits: ' + total_count);
+		fs.appendFileSync(filename, '\nTotal Bits: ' + total_count);
 		console.log(total_count);
 	}
 }
@@ -205,9 +205,8 @@ he.merge();
 /*for (let n in he.frequency_table){
 	console.log(he.frequency_table[n][1].parent);
 }*/
-
 he.encode();
-he.output();
+he.output('outfile.dat');
 //he.print();
 //console.log(he.frequency_table);
 /*
