@@ -1,0 +1,20 @@
+{
+  "name": "cs570",
+  "version": "1.0.0",
+  "description": "homeworks",
+  "main": "huffman.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc huffman.ts",
+    "start": "node huffman.js"
+  },
+  "author": "Ning Zhang",
+  "license": "ISC",
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "readline-sync": "^1.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^8.0.34"
+  }
+}

@@ -1,3 +1,4 @@
+//Based on tutorial video by the instructor of cs570
 type Prioritizer<T> = (x: T, y: T) => number;
 export class PriorityQueue<T> {
     private arr: T[];
@@ -17,7 +18,7 @@ export class PriorityQueue<T> {
         }
         let added: boolean = false;
         for (let i: number = 0; i < this.arr.length; i++) {
-            if (this.prioritizer(value, this.arr[i]) <= 0) {
+            if (this.prioritizer(value, this.arr[i]) < 0) {
                 continue;
             }
             this.arr.splice(i, 0, value);
@@ -27,7 +28,6 @@ export class PriorityQueue<T> {
         if (!added) {
             this.arr.push(value);
         }
-        //console.log(value);
 
     }
     public dequeue(): T {
