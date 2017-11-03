@@ -1,30 +1,18 @@
 "use strict";
 /**
  * plans
- * 1. create heap for input frequency table
- * 2. update the forest
- * 	queue = [node1, node2, node3, node4, node5];
- *  make a copy of the queue.
- *  copy = [node1, node2, node3, node4, node5];
- * 	create parent nodes;
+ * create two heaps for input frequency table
+ * 		frequency_heap: a max heap
+ *  	min_heap: a min heap
+ * 	two heaps store instaces of TreeNode class
+ * 	because of the charateristics of reference typse,
+ * 	when an instance in one heap is updated, its shallow copy in the other is updated as well.
+ * Using this feature, huffman tree is created using DFS method.
+ * Then output results using deque method in heap,
+ * 		frequency heap outputs frequency table;
+ *  	min heap outputs huffman code table.
+ *  	corresponding output file is written into file.
  *
- *
- *
- * questions: how can I create nested clasess?
- * seems not working if TreeNode is inside the HuffmanEncode, which makes error when I instantiate a tree node
- *
- *
- *
- * bugs:
- * reference types confusion
- * hypo: JS may have different reference rules.
- * test: experiment with JS to find its rules.
- * result: `shift` method may be a deep copy \\WRONG
- *
- * In the process of detecting the bug, the code works though I haven't done any fix to it.
- *
- * Nothing could be more frustrating than the fact that a malfunction disappears all of sudden without giving you
- * any clue of what might have fixed it.
  *
  */
 exports.__esModule = true;
@@ -47,14 +35,17 @@ var TreeNode = /** @class */ (function () {
 var HuffmanEncode = /** @class */ (function () {
     function HuffmanEncode() {
         this.data = null;
-        //this.frequency_table = {};
     }
+    //load in raw data
     HuffmanEncode.prototype.load_data = function (filename) {
-        //TODO: check the validity of filename, whether it exists.
+        //validaty of filename has been checked when prompting user for input.
+        //load in data from file
         this.data = fs.readFileSync(filename, 'utf8');
+        //clean non-alphanumerical characters
         this.data = this.data.replace(/[^A-Za-z0-9]/g, '');
-        //console.log(this.data);
     };
+    //count ferquency of each characters in the cleaned data;
+    //create a hashmap to store the reuslt
     HuffmanEncode.prototype.process_data = function () {
         //create frequency table and create forest
         assert.notEqual(this.data, null, "Error: no data!");
@@ -67,19 +58,17 @@ var HuffmanEncode = /** @class */ (function () {
                 table[this.data[i]] = 1;
             }
         }
+        //initialize frequency heap and min heap
         this.frequency_queue = new PriorityQueue_1.PriorityQueue(function (x, y) { return x.val - y.val; }); //max heap
         this.min_queue = new PriorityQueue_1.PriorityQueue(function (x, y) { return y.val - x.val; }); //min heap
         for (var key in table) {
-            //update the table values as percentages
-            //let freq: number = Math.round(table[key] / this.data.length * 100);
-            //create leaf nodes and push into the priority Queue
+            //create leaf nodes and push into the frequency heap and min heap
             var leaf = new TreeNode(key, table[key]);
-            //this.frequency_table[key] = [freq, leaf];
             this.frequency_queue.enqueue(leaf);
             this.min_queue.enqueue(leaf);
         }
-        //console.log(this.frequency_table);
     };
+    //merge forests into one parent TreeNode, assign it to this.merged_node
     HuffmanEncode.prototype.merge = function () {
         //output: a single tree node
         while (true) {
@@ -104,8 +93,8 @@ var HuffmanEncode = /** @class */ (function () {
     //Use DFS to label and encode all nodes
     //recursion
     HuffmanEncode.prototype.dfs = function (parent) {
+        //base case
         if (parent.left === null && parent.right === null) {
-            //console.log(parent);
             return;
         }
         if (parent.left != null) {
@@ -119,13 +108,15 @@ var HuffmanEncode = /** @class */ (function () {
             this.dfs(parent.right);
         }
     };
+    //implement huffman encoding using DFS method
     HuffmanEncode.prototype.encode = function () {
-        //base case
         this.dfs(this.merged_node);
     };
+    //print out frequency table. but not used in this homework.
     HuffmanEncode.prototype.print = function () {
         console.log(this.frequency_queue.get_queue());
     };
+    //generate padding spaces for alignment purpose in the output.
     HuffmanEncode.prototype.repeat_padding_space = function (num) {
         var space = ' ';
         for (var i = 1; i < num; i++) {
@@ -133,13 +124,14 @@ var HuffmanEncode = /** @class */ (function () {
         }
         return space;
     };
+    //print frequency table
     HuffmanEncode.prototype.output_frequency_table = function (node) {
         var freq_perc = ((node.val / this.data.length) * 100).toFixed(3).toString();
         var space = this.repeat_padding_space(10 - freq_perc.length + 1);
         var result = node.name + ',' + space + freq_perc + "%";
-        //console.log(result);
         return result;
     };
+    //print huffman code table
     HuffmanEncode.prototype.output_huffman_code = function (node) {
         var code = node.code;
         var space = this.repeat_padding_space(10);
@@ -174,6 +166,7 @@ var HuffmanEncode = /** @class */ (function () {
         fs.appendFileSync(filename, '\nTotal Bits: ' + total_count);
         console.log(total_count);
     };
+    //prompt user for input file name and directory
     HuffmanEncode.prototype.prompt_user_for_input = function (def) {
         var filename = readline.question(">> ");
         if (filename === 'default') {
@@ -189,6 +182,7 @@ var HuffmanEncode = /** @class */ (function () {
             return this.prompt_user_for_input(def);
         }
     };
+    //main function
     HuffmanEncode.prototype.start_encode_process = function () {
         console.log("Huffman encoding process starts.");
         console.log("Please give me target file.");

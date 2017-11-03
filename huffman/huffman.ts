@@ -1,4 +1,6 @@
 /**
+ * Group Member: Ning Zhang (10431028) 
+ *
  * plans
  * create two heaps for input frequency table
  * 		frequency_heap: a max heap

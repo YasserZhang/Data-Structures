@@ -26,7 +26,6 @@ var PriorityQueue = /** @class */ (function () {
         if (!added) {
             this.arr.push(value);
         }
-        //console.log(value);
     };
     PriorityQueue.prototype.dequeue = function () {
         return this.arr.shift();

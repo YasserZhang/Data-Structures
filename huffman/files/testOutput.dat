@@ -1,0 +1,22 @@
+Symbol     Frequency
+A,     50.000%
+B,     16.667%
+H,      5.556%
+G,      5.556%
+F,      5.556%
+E,      5.556%
+D,      5.556%
+C,      5.556%
+
+
+Symbol     Huffman Codes
+A,          1
+B,          011
+H,          0100
+G,          0101
+F,          0010
+E,          0011
+D,          0000
+C,          0001
+
+Total Bits: 42
