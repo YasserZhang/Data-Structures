@@ -8,3 +8,6 @@ software design projects at cs570
 ### project 3:
   huffman encoding
   take advantange of heap strucuture to create a huffman tree.
+### project 4:
+  searching keywords in articles
+  use tries structures to escalate searching company names in articles.
