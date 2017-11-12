@@ -55,13 +55,52 @@ import * as assert from 'assert';
 export class Tries {
     root: TrieNode;
     total_words: number;
+
     constructor() {
         this.root = new TrieNode();
         this.total_words = 0;
     }
     //search a word
+    check_word(paragraph:string, start_index:number):[string, number]{
+        let i:number = start_index;
+        let current = this.root;
+        while (i < paragraph.length) {
+            if (paragraph[i] in current.children) {
+                current = current.children[paragraph[i]];
+            } else {
+                return [null, start_index];
+            }
+            //if touch a leaf, check whether the word
+            //in the paragraph is a correct compnay name.
+            //it could be a part of other word, such as Intelligence 
+            //as opposed to Intel.
+            if (current.word_end) {
+                if (paragraph[i + 1] === ' ') {
+                    return [current.primary_key, i + 2];
+                }else {
+                    return [null, start_index];
+                }
 
+            }
+        }
+        
+    }
+    exists(word: string):boolean{
+        let current = this.root;
+        for (let i = 0; i < word.length; i++) {
+            if (word[i] in current.children) {
+                current = current.children[word[i]];
+            } else {
+                return false;
+            }
+        }
+        if (current.word_end) {
+            return true;
+        } 
+        return false;
+    }
     //non-recursion
+    /*
     check_word(word:string, get_count:boolean = false, update_count: boolean = false): any {
         let current = this.root;
         for (let i = 0; i < word.length; i++) {
@@ -86,7 +125,7 @@ export class Tries {
             console.log('word is not found.');
             return false;
         }
-    }
+    }*/
     //insert a word
     private create_new_node(current_node: TrieNode, key: string, start_index: number): TrieNode {
         for (let i = start_index; i < key.length; i++) {
@@ -96,7 +135,7 @@ export class Tries {
         return current_node;
     }
 
-    insert(key: string, update_count: boolean = false) {
+    insert(key: string, primary_key: string) {
         key = key.trim();
         if (key === '') {
             return;
@@ -114,15 +153,15 @@ export class Tries {
                 i = key.length;
             }
         }
-        if (update_count) {
-            current.count++;
-        } 
+        current.word_end = true;
+        current.add_primary_key(primary_key);
         console.log("inserted " + key);
     }
-
+    /*
     get_word_count(word: string): any {
         return this.check_word(word, true, false);
     }
+    */
 
     get_total_words() {
         return this.total_words;
