@@ -1,6 +1,7 @@
 import {SearchArticles} from './SearchArticles';
 import * as readline from 'readline-Sync';
 import * as fs from 'fs';
+import * as path from 'path';
 /**
  * 
  * code structure:
@@ -21,15 +22,15 @@ function prompt_user_for_input(def:string): string {
 	if (filename === 'default') {
 			return def;
 		}
-		if (fs.existsSync(filename)) {
+	if (fs.existsSync(filename)) {
 			console.log(filename + " is found.");
 			return filename;
-		}
-		else {
-			console.log("file is not found. Please try again.");
-			console.log("You can also type 'default' to get the default file we prepare for you.")
-			return this.prompt_user_for_input(def);
-		}
+	}
+	else {
+		console.log("file is not found. Please try again.");
+		console.log("You can also type 'default' to get the default file we prepare for you.")
+		return prompt_user_for_input(def);
+	}
     }
 /**
  * 
@@ -54,7 +55,7 @@ function output(searched_result: SearchArticles){
     let TOTAL_COUNT:number = searched_result.total_count;
     let MAX_NAME_LENGTH = searched_result.maximum_name_length;
     //print title;
-    console.log(NAME + repeat_padding_space(MAX_NAME_LENGTH - NAME.length) + 
+    console.log('\x1b[32m%s\x1b[0m', NAME + repeat_padding_space(MAX_NAME_LENGTH - NAME.length) + 
                 HIT + repeat_padding_space(8) + RELEVANCE);
     let total_hits: number = 0;
     for (let key in searched_result.primary_name_hashmap) {
@@ -65,7 +66,7 @@ function output(searched_result: SearchArticles){
         let relevance: any = ((hit/TOTAL_COUNT) * 100);
         let digits = Math.round(relevance).toString().length;
         relevance = relevance.toFixed(4 - digits).toString() + '%';
-        console.log(name + repeat_padding_space(MAX_NAME_LENGTH - name.length + 3) +
+        console.log('\x1b[32m%s\x1b[0m', name + repeat_padding_space(MAX_NAME_LENGTH - name.length + 3) +
         hit + repeat_padding_space(14 - hit.toString().length + 1) +
         relevance);
     }
@@ -74,35 +75,34 @@ function output(searched_result: SearchArticles){
     let total_relevance: any = ((total_hits/TOTAL_COUNT) * 100);
     let digits = Math.round(total_relevance).toString().length;
     total_relevance = total_relevance.toFixed(4 - digits).toString() + '%';
-    console.log(front_padding + TOTAL_HITS + 
+    console.log('\x1b[32m%s\x1b[0m', front_padding + TOTAL_HITS + 
         repeat_padding_space(MAX_NAME_LENGTH - TOTAL_HITS.length + 3 - front_padding.length) +
         total_hits + repeat_padding_space(14 - total_hits.toString().length + 1) + total_relevance);
     let TOTAL_WORDS = 'Total Words';
-    console.log(front_padding + TOTAL_WORDS + front_padding + '  ' + TOTAL_COUNT);
-
-
+    console.log('\x1b[32m%s\x1b[0m', front_padding + TOTAL_WORDS + front_padding + '  ' + TOTAL_COUNT);
 }
 
 /**
  * 
- * @param company_file 
+ * @param filepath directory
+ * @param company_file file name
  */
-function main(company_file) {
+function main(filepath, company_file) {
     let tries: SearchArticles = new SearchArticles();
-    tries.create_tries('', company_file);
-	console.log("search company names in article.");
-	console.log("Please give me an article.");
-	console.log("You can type in the format of 'directory/filename', such as 'files/article1.txt'");
-	console.log("or just the filename if it is in current working directory.");
+    tries.create_tries(filepath, company_file);
+	console.log('\x1b[36m%s\x1b[0m', "START TO SEARCH COMPANY NAMES IN ARTICLES.");
+	console.log('\x1b[36m%s\x1b[0m', " Please give me an article.");
+	console.log('\x1b[36m%s\x1b[0m', " format: 'directory/filename', i.e. 'files/article1.txt'");
+    console.log('\x1b[36m%s\x1b[0m', " or just the filename if it is in current working directory.");
+    console.log('\x1b[36m%s\x1b[0m', " or type 'default' to use the article provided by me.");
 	let default_input_filename: string = 'files/article1.txt';
 	let input_filename: string = prompt_user_for_input(default_input_filename);
     console.log("read in ...")
-    tries.create_tries('', company_file);
     tries.search_article(input_filename);
     //console.log("primary name, ",tries.primary_name_hashmap);
     //console.log("total count", tries.total_count);
     //console.log("Nvidia", tries.tries.exists('Nvidia'));
     output(tries);
     }
-
-main('company.dat');
+//type in directory name, and company file name.
+main('','company.dat');
