@@ -18,7 +18,7 @@
  * if some characters are not found, create them as child nodes under a found
  * character.
  * 
- * check a word
+ * exists
  * similar to insert, only difference is that it return boolean
  * 
  *  
@@ -51,42 +51,69 @@
  * 
  */
 import {TrieNode} from './TrieNode';
-import * as assert from 'assert';
 export class Tries {
     root: TrieNode;
     total_words: number;
-
     constructor() {
         this.root = new TrieNode();
         this.total_words = 0;
     }
-    //search a word
-    check_word(paragraph:string, start_index:number):[string, number]{
-        let i:number = start_index;
-        let current = this.root;
+    //search a keyword in a paragraph
+    //return as soon as check out a keyword, or mismatch happens
+    search_paragraph_for_keyword(paragraph: string, start_index: number): [string, number] {
+        /*
+        input: 
+            a paragraph; 
+            start_index: a pointer for the paragraph;
+        output: [primary_name, end_point];
+        if find a keyword, 
+            return the primary_name of the keyword,
+            and the start index of the next word right after the keyword.
+        if mismatch, 
+            return [null, start_index];
+        */
+        if (paragraph.length == 0) {
+            return [null, 0];
+        }
+        let i: number = start_index;
+        let current: TrieNode = this.root;
         while (i < paragraph.length) {
+            if (paragraph[i] === ' ') {
+                i++;
+                continue;
+            }
             if (paragraph[i] in current.children) {
                 current = current.children[paragraph[i]];
+                i++;
             } else {
-                return [null, start_index];
+                break;
             }
-            //if touch a leaf, check whether the word
-            //in the paragraph is a correct compnay name.
-            //it could be a part of other word, such as Intelligence 
-            //as opposed to Intel.
             if (current.word_end) {
-                if (paragraph[i + 1] === ' ') {
-                    return [current.primary_key, i + 2];
-                }else {
-                    return [null, start_index];
-                }
-
+                break;
             }
         }
-        
+        //check if it is a match.
+        //if touch a leaf, check whether the word
+        //in the paragraph is a correct compnay name.
+        //it could be a part of other word, such as Intelligence 
+        //as opposed to Intel.
+        //console.log(paragraph.substring(start_index, i), current.word_end);
+        if (current.word_end) {
+            if (paragraph[i] === ' ') {
+                //console.log("get in true condition", paragraph.substring(start_index, i + 1));
+                return [current.primary_key, i + 1];
+            }else {
+                //console.log("get in false condition", paragraph.substring(start_index, i + 1));
+                return [null, start_index];
+            }
+        } else {
+            //console.log("current is not word end", paragraph.substring(start_index, i + 1));
+            return [null, start_index];
+        }
     }
-    exists(word: string):boolean{
-        let current = this.root;
+    //check if a single word exists in trie
+    exists(word: string): boolean {
+        let current: TrieNode = this.root;
         for (let i = 0; i < word.length; i++) {
             if (word[i] in current.children) {
                 current = current.children[word[i]];
@@ -99,33 +126,7 @@ export class Tries {
         } 
         return false;
     }
-    //non-recursion
-    /*
-    check_word(word:string, get_count:boolean = false, update_count: boolean = false): any {
-        let current = this.root;
-        for (let i = 0; i < word.length; i++) {
-            if (word[i] in current.children) {
-                current = current.children[word[i]];
-            } else {
-                console.log('word is not found.');
-                return false;
-            }
-        }
-        if (update_count) {
-            current.count++;
-        }
-        if (current.count > 0) {
-            if (get_count) {
-                return current.count;
-            } else {
-                return true;
-            }
-        } else {
-            console.log('reach the end of the word.');
-            console.log('word is not found.');
-            return false;
-        }
-    }*/
+
     //insert a word
     private create_new_node(current_node: TrieNode, key: string, start_index: number): TrieNode {
         for (let i = start_index; i < key.length; i++) {
@@ -134,7 +135,7 @@ export class Tries {
         }
         return current_node;
     }
-
+    //insert names, without spaces
     insert(key: string, primary_key: string) {
         key = key.trim();
         if (key === '') {
@@ -162,7 +163,6 @@ export class Tries {
         return this.check_word(word, true, false);
     }
     */
-
     get_total_words() {
         return this.total_words;
     }
@@ -176,3 +176,8 @@ export class Tries {
  * 
  * 
  */
+
+ //let tries = new Tries();
+ //tries.insert('microsoft', 'Microsoft');
+ //tries.insert('The Microsoft Corporation', 'Microsoft');
+ //tries.insert('Amgen Inc', 'Amgen');
