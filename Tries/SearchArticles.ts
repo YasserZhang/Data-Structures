@@ -44,7 +44,6 @@ export class SearchArticles {
 
     create_tries(filepath: string, filename: string) {
         let file: string = path.join(filepath, filename);
-        console.log(file);
         assert.notEqual(fs.existsSync(file), false, 
                                 "No such file is found.");
         let names_list: string = fs.readFileSync(file, 'utf8');
@@ -62,12 +61,11 @@ export class SearchArticles {
                 this.tries.insert(name, primary_name);
             }
         }
-        console.log(this.tries.get_total_words());
+        console.log("Total Words in Trie: ", this.tries.get_total_words());
     }
     //read in article, return a string
     private read_article(filename): string {
         //filename = path.join(filepath, filename);
-        console.log(filename);
         assert.notEqual(fs.existsSync(filename), false, 
                                 "No such file is found.");
         let article: string = fs.readFileSync(filename, 'utf8');
@@ -140,10 +138,9 @@ export class SearchArticles {
             let word = paragraph.substring(start_index, end);
             if (!(this.trivial_words.has(word))) {
                 this.total_count++;
-            } else {
-                console.log("a trivial word", word);
-            }
-
+            } //else {
+                //console.log("a trivial word", word);
+            //}
             return end + 1;
         }
     }
