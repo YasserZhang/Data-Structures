@@ -1,5 +1,6 @@
-class Node {
-    private id: string;
+import * as fs from 'fs';
+export class Node {
+    private readonly id: string;
     private network_name: string;
     private neighbors: {[key: string]: number};
     
@@ -9,10 +10,17 @@ class Node {
         this.neighbors = {};
     }
     add_neighbor(node_key: string, dist: number) {
-        this.neighbors[node_key] = dist;
+        if (!(node_key in this.neighbors)) {
+            this.neighbors[node_key] = dist;
+        }
     }
     get_network_name() {
         return this.network_name;
+    }
+    set_network_name(name:string) {
+        if (this.network_name == null){
+            this.network_name = name;
+        }
     }
     get_neighbors() {
         return this.neighbors;
@@ -34,23 +42,50 @@ export class Network {
         this.V[this.source] = new Node(key, network_name);
         this.routing_table = [];
     };
-
-    add_edge(from_key: string, to_key: string, cost: number) {
-        if (!(from_key in this.V)){
-            this.V[from_key] = new Node(from_key);
+    /*
+    //testing the functionality of dijkstra
+    //testing code START here
+    load_data(filename: string) {
+        //this.min_distances = {};
+        //this.min_paths = {};
+        let data = fs.readFileSync(filename, 'utf8');
+        let arrs = data.split('\n');
+        for (let arr of arrs) {
+            arr = arr.trim();
+            let row: Array<string> = arr.split(' ');
+            //console.log(row);
+            let from_key: string = row[0];
+            let to_key: string = row[1];
+            let dist: number = Number(row[2]);
+            this.add_edge(from_key, to_key, dist)
         }
-        if (!(to_key in this.V)) {
-            this.V[to_key] = new Node(to_key);
+        //console.log(Object.keys(this.V));
+    }
+    //testing code END
+    */
+    add_edge(from_key: string, to_key: string, cost: number, need_check_existence: boolean = true) {
+        if (need_check_existence) {
+            if (!(from_key in this.V)){
+                this.V[from_key] = new Node(from_key);
+            }
+            if (!(to_key in this.V)) {
+                this.V[to_key] = new Node(to_key);
+            }
         }
         this.V[from_key].add_neighbor(to_key, cost);
         this.V[to_key].add_neighbor(from_key, cost);
     }
-    
+    //reset mutual cost btw a neighbor and the router
+    change_neighbor_cost(neighbor_key: string, cost: number){
+        this.V[this.source].get_neighbors()[neighbor_key] = cost;
+        this.V[neighbor_key].get_neighbors()[this.source] = cost;
+    }
     //dijkstra
     find_shortest_path(){
         let source_key = this.source;
         //initialize distances and paths dictionary
-        let min_distances: {[key:string]:Array<number>} = {}; //[cumulative_cost, cost_for_comparison]
+        //Array<number> => [cumulative_cost, cost_for_comparison]
+        let min_distances: {[key:string]:Array<number>} = {}; 
         let min_paths: {[key:string]:string} = {};
         for (let key in this.V) {
             if (key != source_key){
@@ -95,6 +130,7 @@ export class Network {
             not_visited.delete(min_node_key);
             visited.push(min_node_key);
         }
+        this.routing_table = [];
         for (let key in min_distances) {
             if (key != this.source) {
                 let network_id: string = key;
@@ -108,12 +144,15 @@ export class Network {
     }
     //print routing table
     print_routing_table(){
-        this.find_shortest_path();
+        //this.find_shortest_path();
         console.log(this.routing_table);
     }
+} //end Network
 
-}
 
-/*
-An LSP packet is originated by router 'A', 'A' sends it to 'B', and 'B' sends it to 'C'. When 'C' receives the packet, it is able to see either OPTION 1: network names of 'A' and 'B' and costs, or OPTION 2: directly connected routers of 'A' and 'B' respectively and their corresponding costs. Then 'C' updates its graph by merging received information into its own connectivity graph. So the more packets 'C' receives from different remote routers, the better it knows the whole picture of the router network which it is part of.
+/* test the functionality of dijkstra
+let dj = new Network('1', '123.234.786');
+dj.load_data('infile.dat');
+dj.find_shortest_path();
+dj.print_routing_table();
 */
