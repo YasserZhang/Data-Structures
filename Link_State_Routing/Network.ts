@@ -1,8 +1,9 @@
 import * as fs from 'fs';
+
 export class Node {
-    private readonly id: string;
-    private network_name: string;
-    private neighbors: {[key: string]: number};
+    private readonly id: string; // router id
+    private network_name: string; // network behind the router
+    private neighbors: {[key: string]: number}; // the router's neighbors and costs
     
     constructor(key: string, network_name: string = null) {
         this.id = key;
@@ -10,9 +11,7 @@ export class Node {
         this.neighbors = {};
     }
     add_neighbor(node_key: string, dist: number) {
-        if (!(node_key in this.neighbors)) {
-            this.neighbors[node_key] = dist;
-        }
+        this.neighbors[node_key] = dist;
     }
     get_network_name() {
         return this.network_name;
@@ -28,13 +27,33 @@ export class Node {
     get_key() {
         return this.id;
     }
+    // this function is used when a graph has more than one component.
+    // in this case, a router in a different component will be picked as 
+    // next closed destination in dijkstra algorithm, and the router's 
+    // neighbor with the minimum distance, or say cost, will be chosen
+    // as the outgoing link.
+
+    // returns: the router id of the neighbor with minimum distance to the source router.
+    get_neighbor_with_min_cost(): string{
+        //credit to https://stackoverflow.com/questions/27376295/getting-key-with-the-highest-value-from-object
+        //return Object.keys(this.neighbors).reduce(function(a,b){return this.neighbors[a] < this.neighbors[b] ? a : b});
+        let min_key: string = null;
+        let min_cost: number = Infinity;
+        for (let key in this.neighbors) {
+            if (this.neighbors[key] < min_cost) {
+                min_cost = this.neighbors[key];
+                min_key = key;
+            }
+        }
+        return min_key;
+    }
 }
 
 export class Network {
     //routers: {[key: string]: Node};
-    V: {[key: string]: Node}
-    source: string;
-    routing_table: Array<Array<any>>;
+    V: {[key: string]: Node} // vertices, format => id: Node;
+    source: string; // source id of the source router
+    routing_table: Array<Array<any>>; //for final printing
 
     constructor(key: string, network_name: string){
         this.V = {};
@@ -43,7 +62,7 @@ export class Network {
         this.routing_table = [];
     };
     /*
-    //testing the functionality of dijkstra
+    //TESTING: functionality of dijkstra
     //testing code START here
     load_data(filename: string) {
         //this.min_distances = {};
@@ -61,8 +80,9 @@ export class Network {
         }
         //console.log(Object.keys(this.V));
     }
-    //testing code END
+    //testing code END here
     */
+    //add undirected edges to two connecting routers
     add_edge(from_key: string, to_key: string, cost: number, need_check_existence: boolean = true) {
         if (need_check_existence) {
             if (!(from_key in this.V)){
@@ -90,7 +110,7 @@ export class Network {
         for (let key in this.V) {
             if (key != source_key){
                 min_distances[key] = [0, Infinity];
-                min_paths[key] = 'infinity';
+                min_paths[key] = 'inf';
             } else {
                 min_distances[key] = [0, 0];
                 min_paths[key] = key;
@@ -98,6 +118,7 @@ export class Network {
         }
         //not_visited: a set of node keys whose distances to source are not minimum
         let not_visited: Set<string> = new Set(Object.keys(this.V));
+        //console.log("original not visited:", not_visited);
         //console.log("not visited: ",not_visited);
         not_visited.delete(source_key);
         //visited: when a node with min distance to source is found, add it here and 
@@ -106,9 +127,11 @@ export class Network {
         let visited_hash = new Set(visited);
         while (not_visited.size != 0) {
             source_key = visited[visited.length - 1];
+            //if (this.V[source_key]){ //DEBUG: null keys are added to the visited array.
             let neighbors = this.V[source_key].get_neighbors();
             let min_distance = Infinity;
             let min_node_key = null;
+
             for (let node_key of not_visited) {
                 if (!(node_key in visited_hash)) {
                     if (node_key in neighbors) {
@@ -119,7 +142,7 @@ export class Network {
                             min_distances[node_key][1] = temp_dist;
                             min_paths[node_key] = min_paths[source_key] + node_key;
                         }
-                    }
+                    } 
                     //compare it to local minimum
                     if (min_distance > min_distances[node_key][1]) {
                         min_distance = min_distances[node_key][1];
@@ -127,30 +150,66 @@ export class Network {
                     }
                 }
             }
-            not_visited.delete(min_node_key);
-            visited.push(min_node_key);
+            //check if next router with min distance
+            if (min_node_key != null) {
+                not_visited.delete(min_node_key);
+                visited.push(min_node_key);
+            } else {
+                //it means source node has inifinity cost to all the nodes in the not_visited list.
+                for (let node of not_visited) {
+                    not_visited.delete(node);
+                    visited.push(node);
+                }
+            }
+            /*
+            //DEBUG: null keys are added to the visited array.
+            // it is due to the fact that the graph may have more than one components.
+            
+            }//end if
+            else {
+                console.log("undefined key:", source_key, "graph:", this.V);
+                //not_visited.delete(source_key);
+                console.log(not_visited);
+                console.log(visited);
+                break;
+            }
+            */
         }
+        //update results to routing table
         this.routing_table = [];
         for (let key in min_distances) {
             if (key != this.source) {
-                let network_id: string = key;
+                let network: string = this.V[key].get_network_name();
+                if (network == null) {
+                    network = 'unknown behind ' + key;
+                }
+                //let network_id: string = key;
                 let cost: number = min_distances[key][1];
                 let path: string = min_paths[key];
-                let outgoing_link: string = path[1];
-                let s = [network_id, cost, outgoing_link];
+                if (path == 'inf'){
+                    var outgoing_link: string = null; //this.V[this.source].get_neighbor_with_min_cost();
+                } else {
+                    var outgoing_link: string = path[1];
+                }
+                let s = [network, cost, outgoing_link];
                 this.routing_table.push(s);
             }
         }
     }
     //print routing table
     print_routing_table(){
-        //this.find_shortest_path();
-        console.log(this.routing_table);
+        this.find_shortest_path();
+        //TODO: make it more readable.
+        console.log(" network     outgoing link      cost");
+        for (let item of this.routing_table) {
+            console.log(item[0], "       ", item[2], "           ", item[1]);
+        }
+        //console.log(this.routing_table);
     }
 } //end Network
 
 
-/* test the functionality of dijkstra
+/* TEST: functionality of dijkstra
 let dj = new Network('1', '123.234.786');
 dj.load_data('infile.dat');
 dj.find_shortest_path();
