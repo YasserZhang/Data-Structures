@@ -35,7 +35,6 @@ export class Router {
         this.sd = false;
         this.resumed_times = 0;
         //this.other_routers_resumed_times = {};
-        this.neighbors_know_i_am_resumed = true;
     }
     get_keys_from_references(): Array<string>{
         return Object.keys(this.references);
