@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-
+//import * as fs from 'fs'; //this is only for testing.
+//Node creates vertext instances for Network classs
 export class Node {
     private readonly id: string; // router id
     private network_name: string; // network behind the router
@@ -27,6 +27,8 @@ export class Node {
     get_key() {
         return this.id;
     }
+
+    /* NOT NEEDED IN FINAL VERSION. PLEASE IGNORE.
     // this function is used when a graph has more than one component.
     // in this case, a router in a different component will be picked as 
     // next closed destination in dijkstra algorithm, and the router's 
@@ -47,8 +49,10 @@ export class Node {
         }
         return min_key;
     }
+    */
 }
-
+//Network mains a network map reflecting a router's latest understanding of the real network map
+//implement dijkstra algorithm to optimize paths to each network.
 export class Network {
     //routers: {[key: string]: Node};
     V: {[key: string]: Node} // vertices, format => id: Node;
@@ -62,7 +66,7 @@ export class Network {
         this.routing_table = [];
     };
     /*
-    //TESTING: functionality of dijkstra
+    //FOR TESTING: functionality of dijkstra
     //testing code START here
     load_data(filename: string) {
         //this.min_distances = {};
@@ -84,6 +88,7 @@ export class Network {
     */
     //add undirected edges to two connecting routers
     add_edge(from_key: string, to_key: string, cost: number, need_check_existence: boolean = true) {
+        //check existence of nodes invloved.
         if (need_check_existence) {
             if (!(from_key in this.V)){
                 this.V[from_key] = new Node(from_key);
@@ -127,7 +132,7 @@ export class Network {
         let visited_hash = new Set(visited);
         while (not_visited.size != 0) {
             source_key = visited[visited.length - 1];
-            //if (this.V[source_key]){ //DEBUG: null keys are added to the visited array.
+            //if (this.V[source_key]){ //FOR DEBUG: null keys are added to the visited array.
             let neighbors = this.V[source_key].get_neighbors();
             let min_distance = Infinity;
             let min_node_key = null;
@@ -162,9 +167,8 @@ export class Network {
                 }
             }
             /*
-            //DEBUG: null keys are added to the visited array.
+            //FOR DEBUG: null keys are added to the visited array.
             // it is due to the fact that the graph may have more than one components.
-            
             }//end if
             else {
                 console.log("undefined key:", source_key, "graph:", this.V);
@@ -196,20 +200,32 @@ export class Network {
             }
         }
     }
-    //print routing table
+    /* VERSION 1: PRINT ROUTING TABLE
+    //print routing table <network, outgoing link, cost>
     print_routing_table(){
         this.find_shortest_path();
-        //TODO: make it more readable.
         console.log(" network     outgoing link      cost");
         for (let item of this.routing_table) {
             console.log(item[0], "       ", item[2], "           ", item[1]);
         }
         //console.log(this.routing_table);
     }
+    */
+    ///*
+    //VERSION 2: PRINT ROUTING TABLE
+    //print routing table <network, outgoing link>
+    print_routing_table() {
+        console.log(" network     outgoing link");
+        for (let item of this.routing_table) {
+            console.log(item[0], "       ", item[2]);
+        }
+        console.log("\n"); 
+    }
+    //*/
 } //end Network
 
 
-/* TEST: functionality of dijkstra
+/* FOR TEST: functionality of dijkstra
 let dj = new Network('1', '123.234.786');
 dj.load_data('infile.dat');
 dj.find_shortest_path();
