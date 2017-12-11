@@ -1,7 +1,3 @@
-
-Author: Ning Zhang
-ID No: 10431028
-
 This is an complement to comments in my code. The main goal for this file is to give you 
 an idea of the program structure from a high level.
 
