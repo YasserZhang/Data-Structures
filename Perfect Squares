@@ -1,0 +1,33 @@
+class Solution:
+    """
+    @param: n: a positive integer
+    @return: An integer
+    """
+    def generate_squares(self, n):
+        squares = []
+        for i in range(1, n):
+            square = i*i
+            if square <= n:
+                squares.append(square)
+            else:
+                return squares
+    def generate_matrix(self, squares, n):
+        matrix = [[0 for _ in range(n+1)] for _ in range(len(squares) + 1)]
+        for i in range(n+1):
+            matrix[0][i] = i
+        return matrix
+    def numSquares(self, n):
+        # write your code here
+        if n <= 3:
+            return n
+        squares = self.generate_squares(n)
+        matrix = self.generate_matrix(squares, n)
+        for s in range(1, len(squares) + 1):
+            for i in range(1, n + 1):
+                if squares[s - 1] == i:
+                    matrix[s][i] = 1 ;
+                elif squares[s - 1] > i:
+                    matrix[s][i] = matrix[s - 1][i]
+                else:
+                    matrix[s][i] = min(matrix[s - 1][i], 1 + matrix[s][i - squares[s - 1]])
+        return matrix[-1][-1]
